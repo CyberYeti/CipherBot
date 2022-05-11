@@ -1,4 +1,4 @@
-import json, time, requests, threading
+import json, time, requests, threading, random
 import discord
 
 #region Get Token
@@ -37,9 +37,28 @@ def NextQuote():
 #endregion
 
 #region Cipher Methods
+ALPHABET = 'abcdefghijklmnopqrstuvwxyz'
+def EncryptCaesar(text):
+    shift = random.randint(1,25)
+    encrypted = ""
+    for char in text.lower():
+        if char in ALPHABET:
+            i = ALPHABET.index(char)
+            encrypted += ALPHABET[i+(shift-26)]
+        else:
+            encrypted += char
+    return (encrypted, shift)
+    
 #endregion
 
 #region Discord Bot Commands
+async def CaesarCipher(message):
+    quote = NextQuote()
+    plaintext = quote['q']
+    encrypted,shift = EncryptCaesar(plaintext)
+    author = quote['a']
+    await message.channel.send(f"**Decrypt this quote from {author} encrypted with the caesar cipher a shift of {shift}.**\n{encrypted}")
+
 async def RandQuote(message):
     quote = NextQuote()
     await message.channel.send(f"{quote['q']} -{quote['a']}")
@@ -59,6 +78,7 @@ CMD_HEADER = "c."
 CMDS = {
     "help": HelpCommand,
     "quote": RandQuote,
+    "caesar": CaesarCipher
 }
 
 @client.event
