@@ -80,6 +80,12 @@ async def HelpCommand(message, args):
 client = discord.Client()
 
 CMD_HEADER = "c."
+CMD_NAMES = {
+    "help": ["help", "h"],
+    "quote": ["quote", "q"],
+    "caesar": ["caesar", "c"],
+    "answer": ["answer", "a"]
+}
 CMDS = {
     "help": HelpCommand,
     "quote": RandQuote,
@@ -108,14 +114,15 @@ async def on_message(message):
         commandText = content[len(CMD_HEADER):]
         command = ""
         args = ""
-        for cmd in CMDS:
-            if cmd == commandText: #If the message only contains the commands
-                command = cmd
-                break
-            elif commandText.startswith(f"{cmd} "): #If the command contains args, the command and the args should be seperated by a space
-                command = cmd
-                args = commandText[len(command)+1:]
-                break
+        for cmd, names in CMD_NAMES.items():
+            for name in names:
+                if name == commandText.lower(): #If the message only contains the commands
+                    command = cmd
+                    break
+                elif commandText.lower().startswith(f"{name} "): #If the command contains args, the command and the args should be seperated by a space
+                    command = cmd
+                    args = commandText[len(command)+1:]
+                    break
 
         if command != "": #If the command is one the bot recognizes 
             await CMDS[command](message,args)
