@@ -127,5 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
 Info.json
-CopyInviteLink.py
+Do Not Save

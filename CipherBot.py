@@ -38,6 +38,11 @@ def NextQuote():
 
 #region Cipher Methods
 ALPHABET = 'abcdefghijklmnopqrstuvwxyz'
+
+def AlphabetOnly(text):
+    res = [char for char in text if char in ALPHABET]
+    return ''.join(res)
+
 def EncryptCaesar(text):
     shift = random.randint(1,25)
     encrypted = ""
@@ -55,13 +60,23 @@ def EncryptCaesar(text):
 
 #region Discord Bot Commands
 async def AnswerCommand(message, args):
-    await message.channel.send(f"You have submitted the answer \"{args}\"")
+    for author, info in activeCiphers.items():
+        if str(message.author) == author:
+            print(f"The answer is \'{info['ans']}\'\nYour answer is \'{args}\'")
+            if AlphabetOnly(args) == info['ans']:
+                await message.channel.send(f"You got it correct!")
+                return
+            else:
+                await message.channel.send(f"You got it wrong")
+                return
+    await message.channel.send(f"You don't Have an active cipher")
 
 async def CaesarCipher(message, args):
     quote = NextQuote()
     plaintext = quote['q']
     alphOnly,encrypted,shift = EncryptCaesar(plaintext)
     author = quote['a']
+    activeCiphers[str(message.author)] = {'ans': alphOnly}
     await message.channel.send(f"**Decrypt this quote from {author} encrypted with the caesar cipher a shift of {shift}.**\n{encrypted}")
 
 async def RandQuote(message, args):
@@ -93,6 +108,8 @@ CMDS = {
     "answer": AnswerCommand
 }
 
+activeCiphers = {}
+
 
 @client.event
 async def on_ready():
@@ -121,7 +138,7 @@ async def on_message(message):
                     break
                 elif commandText.lower().startswith(f"{name} "): #If the command contains args, the command and the args should be seperated by a space
                     command = cmd
-                    args = commandText[len(command)+1:]
+                    args = commandText[len(name)+1:]
                     break
 
         if command != "": #If the command is one the bot recognizes 
