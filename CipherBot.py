@@ -1,4 +1,4 @@
-import json, time, requests, threading, random
+import json, time, requests, threading, random, string
 import discord
 
 #region Get Token
@@ -13,71 +13,91 @@ TOKEN = data['Token']
 #endregion
 
 #region Quote Getter
-def GetQuote():
+def GetQuote(min, max):
     #response = requests.get("https://zenquotes.io/api/random")
-    response = requests.get("https://api.quotable.io/random")
+    response = requests.get(f"https://api.quotable.io/random?minLength={min}&maxLength={max}")
     jsonData = json.loads(response.text)
     quoteData = {'q': jsonData['content'], 'a': jsonData['author']}
     return quoteData
 
-quotes = []
-minQuotes = 100
+quotes = {
+    'caesar': []
+}
+quoteParams = {
+    'caesar': (100,125)
+}
+
+minQuotes = 25
 def RefillQuotes():
     while True:
-        if len(quotes) < 100:
-            quotes.append(GetQuote())
-        else:
-            time.sleep(1)
+        for quoteList,params in zip(quotes.values(), quoteParams.values()):
+            if len(quoteList) < minQuotes:
+                quoteList.append(GetQuote(params[0], params[1]))
+            else:
+                time.sleep(1)
 
 quoteRefillThread = threading.Thread(target=RefillQuotes)
 quoteRefillThread.start()
 
-def NextQuote():
-    return quotes.pop()
+def NextQuote(cipher):
+    if cipher in quotes:
+        return quotes[cipher].pop()
+    else:
+        print("Invalid Cipher Name")
 #endregion
 
 #region Cipher Methods
 ALPHABET = 'abcdefghijklmnopqrstuvwxyz'
 
 def AlphabetOnly(text):
-    res = [char for char in text if char in ALPHABET]
+    res = [char for char in text.lower() if char in ALPHABET]
     return ''.join(res)
 
 def EncryptCaesar(text):
     shift = random.randint(1,25)
     encrypted = ""
-    alphOnly = ""
     for char in text.lower():
         if char in ALPHABET:
             i = ALPHABET.index(char)
             encrypted += ALPHABET[i+(shift-26)]
-            alphOnly += char
         else:
             encrypted += char
-    return (alphOnly, encrypted, shift)
+    return (encrypted, shift)
     
 #endregion
 
 #region Discord Bot Commands
 async def AnswerCommand(message, args):
-    for author, info in activeCiphers.items():
-        if str(message.author) == author:
-            print(f"The answer is \'{info['ans']}\'\nYour answer is \'{args}\'")
-            if AlphabetOnly(args) == info['ans']:
-                await message.channel.send(f"You got it correct!")
-                return
-            else:
-                await message.channel.send(f"You got it wrong")
-                return
-    await message.channel.send(f"You don't Have an active cipher")
+    if str(message.author) in activeCiphers:
+        inputtedAns = args.translate(str.maketrans("", "", string.whitespace))
+        if inputtedAns == "":
+            await message.channel.send(f"Enter an answer to be checked")
+            return
+
+        info = activeCiphers[str(message.author)]
+        if AlphabetOnly(inputtedAns) == AlphabetOnly(info['ans']):
+            await message.channel.send(f"You got it correct!")
+            del activeCiphers[str(message.author)]
+            return
+        else:
+            await message.channel.send(f"You got it wrong")
+            return
+    else:
+        await message.channel.send(f"You don't have an active cipher")
 
 async def CaesarCipher(message, args):
-    quote = NextQuote()
+    quote = NextQuote('caesar')
     plaintext = quote['q']
-    alphOnly,encrypted,shift = EncryptCaesar(plaintext)
+    encrypted,shift = EncryptCaesar(plaintext)
     author = quote['a']
-    activeCiphers[str(message.author)] = {'ans': alphOnly}
-    await message.channel.send(f"**Decrypt this quote from {author} encrypted with the caesar cipher a shift of {shift}.**\n{encrypted}")
+
+    problemType = random.randint(0,1)
+    if problemType == 0: #encrypt problem
+        activeCiphers[str(message.author)] = {'ans': plaintext}
+        await message.channel.send(f"**Decrypt this quote by {author} encrypted using the caesar cipher with an unknown shift.**\n{encrypted}")
+    elif problemType == 1: #decrypt problem
+        activeCiphers[str(message.author)] = {'ans': encrypted}
+        await message.channel.send(f"**Encrypt this quote by {author} using the caesar cipher with an shift of {shift}.**\n{plaintext}")
 
 async def RandQuote(message, args):
     quote = NextQuote()
@@ -99,7 +119,7 @@ CMD_NAMES = {
     "help": ["help", "h"],
     "quote": ["quote", "q"],
     "caesar": ["caesar", "c"],
-    "answer": ["answer", "a"]
+    "answer": ["answer", "a", "ans"]
 }
 CMDS = {
     "help": HelpCommand,
