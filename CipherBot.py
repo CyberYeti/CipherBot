@@ -77,6 +77,7 @@ async def AnswerCommand(message, args):
         info = activeCiphers[str(message.author)]
         if AlphabetOnly(inputtedAns) == AlphabetOnly(info['ans']):
             await message.channel.send(f"You got it correct!")
+            await info['msg'].edit(content=info['msg'].content+"\nCipher Solved")
             del activeCiphers[str(message.author)]
             return
         else:
@@ -91,13 +92,16 @@ async def CaesarCipher(message, args):
     encrypted,shift = EncryptCaesar(plaintext)
     author = quote['a']
 
+    if str(message.author) in activeCiphers:
+        prevMessage = activeCiphers[str(message.author)]['msg']
+        await prevMessage.edit(content=prevMessage.content+"\nCipher Given Up")
     problemType = random.randint(0,1)
     if problemType == 0: #encrypt problem
-        activeCiphers[str(message.author)] = {'ans': plaintext}
-        await message.channel.send(f"**Decrypt this quote by {author} encrypted using the caesar cipher with an unknown shift.**\n{encrypted}")
+        msg = await message.channel.send(f"**Decrypt this quote by {author} encrypted using the caesar cipher with an unknown shift.**\n{encrypted}")
+        activeCiphers[str(message.author)] = {'ans': plaintext, 'msg': msg}
     elif problemType == 1: #decrypt problem
-        activeCiphers[str(message.author)] = {'ans': encrypted}
-        await message.channel.send(f"**Encrypt this quote by {author} using the caesar cipher with an shift of {shift}.**\n{plaintext}")
+        msg = await message.channel.send(f"**Encrypt this quote by {author} using the caesar cipher with an shift of {shift}.**\n{plaintext}")
+        activeCiphers[str(message.author)] = {'ans': encrypted, 'msg': msg}
 
 async def RandQuote(message, args):
     quote = NextQuote()
