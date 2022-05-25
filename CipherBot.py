@@ -66,7 +66,22 @@ def EncryptCaesar(text):
     
 #endregion
 
+async def EditCipherEmbed(message, outcome):
+    prevMessage = activeCiphers[str(message.author)]['msg']
+    prevEmbed = prevMessage.embeds[0]
+    if outcome == 'f':
+        prevEmbed.set_footer(text="Given Up Cipher")
+        prevEmbed.color = GIVEUP_COLOR
+    elif outcome == 's':
+        prevEmbed.set_footer(text="Solved Cipher")
+        prevEmbed.color = SOLVED_COLOR
+    await prevMessage.edit(embed=prevEmbed)
+
 #region Discord Bot Commands
+SOLVED_COLOR = 0x15f705
+ACTIVE_COLOR = 0x00bbff
+GIVEUP_COLOR = 0xf70b05
+
 async def AnswerCommand(message, args):
     if str(message.author) in activeCiphers:
         inputtedAns = args.translate(str.maketrans("", "", string.whitespace))
@@ -78,6 +93,7 @@ async def AnswerCommand(message, args):
         if AlphabetOnly(inputtedAns) == AlphabetOnly(info['ans']):
             await message.channel.send(f"You got it correct!")
             await info['msg'].edit(content=info['msg'].content+"\nCipher Solved")
+            await EditCipherEmbed(message, 's')
             del activeCiphers[str(message.author)]
             return
         else:
@@ -93,15 +109,20 @@ async def CaesarCipher(message, args):
     author = quote['a']
 
     if str(message.author) in activeCiphers:
-        prevMessage = activeCiphers[str(message.author)]['msg']
-        await prevMessage.edit(content=prevMessage.content+"\nCipher Given Up")
+        await EditCipherEmbed(message, 'f')
+
+    embedMsg = discord.Embed(title=f"{str(message.author)}'s Cipher", color=ACTIVE_COLOR)
+    embedMsg.set_footer(text="Active Cipher")
+
     problemType = random.randint(0,1)
     if problemType == 0: #encrypt problem
-        msg = await message.channel.send(f"**Decrypt this quote by {author} encrypted using the caesar cipher with an unknown shift.**\n{encrypted}")
-        activeCiphers[str(message.author)] = {'ans': plaintext, 'msg': msg}
+        embedMsg.description = f"**Decrypt this quote by {author} encrypted using the caesar cipher with an unknown shift.**\n{encrypted}"
+        activeCiphers[str(message.author)] = {'ans': plaintext}
     elif problemType == 1: #decrypt problem
-        msg = await message.channel.send(f"**Encrypt this quote by {author} using the caesar cipher with an shift of {shift}.**\n{plaintext}")
-        activeCiphers[str(message.author)] = {'ans': encrypted, 'msg': msg}
+        embedMsg.description = f"**Encrypt this quote by {author} using the caesar cipher with an shift of {shift}.**\n{plaintext}"
+        activeCiphers[str(message.author)] = {'ans': encrypted}
+    msg = await message.channel.send(embed=embedMsg)
+    activeCiphers[str(message.author)]['msg'] = msg
 
 async def RandQuote(message, args):
     quote = NextQuote()
