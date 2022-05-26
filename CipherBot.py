@@ -21,10 +21,12 @@ def GetQuote(min, max):
     return quoteData
 
 quotes = {
-    'caesar': []
+    'caesar': [],
+    'affine': []
 }
 quoteParams = {
-    'caesar': (100,125)
+    'caesar': (100,125),
+    'affine': (50,100)
 }
 
 minQuotes = 25
@@ -64,6 +66,21 @@ def EncryptCaesar(text):
             encrypted += char
     return (encrypted, shift)
     
+affineMultipliers = [1,3,5,7,9,11,15,17,19,21,23,25]
+
+def EncryptAffine(text):
+    multiplier = random.choice(affineMultipliers)
+    shift = random.randint(0,25)
+
+    encrypted = ""
+    for char in text.lower():
+        if char in ALPHABET:
+            index = ALPHABET.index(char)
+            encrypted += ALPHABET[((index * multiplier) + shift)%26]
+        else:
+            encrypted += char
+
+    return (encrypted, multiplier, shift)
 #endregion
 
 async def EditCipherEmbed(message, outcome):
@@ -92,7 +109,6 @@ async def AnswerCommand(message, args):
         info = activeCiphers[str(message.author)]
         if AlphabetOnly(inputtedAns) == AlphabetOnly(info['ans']):
             await message.channel.send(f"You got it correct!")
-            await info['msg'].edit(content=info['msg'].content+"\nCipher Solved")
             await EditCipherEmbed(message, 's')
             del activeCiphers[str(message.author)]
             return
@@ -124,9 +140,36 @@ async def CaesarCipher(message, args):
     msg = await message.channel.send(embed=embedMsg)
     activeCiphers[str(message.author)]['msg'] = msg
 
-async def RandQuote(message, args):
-    quote = NextQuote()
-    await message.channel.send(f"{quote['q']} -{quote['a']}")
+async def AffineCipher(message, args):
+    quote = NextQuote('affine')
+    plaintext = quote['q']
+    encrypted,multiplier,shift = EncryptAffine(plaintext)
+    author = quote['a']
+
+    if str(message.author) in activeCiphers:
+        await EditCipherEmbed(message, 'f')
+
+    embedMsg = discord.Embed(title=f"{str(message.author)}'s Cipher", color=ACTIVE_COLOR)
+    embedMsg.set_footer(text="Active Cipher")
+
+    problemType = random.randint(0,2)
+    if problemType == 0: #encrypt problem
+        embedMsg.description = f"**Decrypt this quote by {author} encrypted using the affine cipher with the key ({multiplier},{shift}).**\n{encrypted}"
+        activeCiphers[str(message.author)] = {'ans': plaintext}
+    elif problemType == 1: #decrypt problem
+        embedMsg.description = f"**Encrypt this quote by {author} using the caesar affine using the key ({multiplier},{shift}).**\n{plaintext}"
+        activeCiphers[str(message.author)] = {'ans': encrypted}
+    elif problemType == 2: #decrypt using given cipher plain pairs
+        lettersInPlain = []
+        for letter in plaintext:
+            if letter in ALPHABET and letter not in lettersInPlain:
+                lettersInPlain.append(letter)
+        selectedLetters = random.sample(lettersInPlain, 2)
+
+        embedMsg.description = f"**Decrypt this quote by {author} encrypted using the affine cipher. Ciphertext \'{ALPHABET[((ALPHABET.index(selectedLetters[0])*multiplier)+shift) % 26]}\' decodes to \'{selectedLetters[0]}\' and ciphertext \'{ALPHABET[((ALPHABET.index(selectedLetters[0])*multiplier)+shift) % 26]}\' decodes to \'{selectedLetters[1]}\'.**\n{encrypted}"
+        activeCiphers[str(message.author)] = {'ans': plaintext}
+    msg = await message.channel.send(embed=embedMsg)
+    activeCiphers[str(message.author)]['msg'] = msg
 
 async def HelpCommand(message, args):
     text = "The available commands are:"
@@ -142,15 +185,15 @@ client = discord.Client()
 CMD_HEADER = "c."
 CMD_NAMES = {
     "help": ["help", "h"],
-    "quote": ["quote", "q"],
     "caesar": ["caesar", "c"],
-    "answer": ["answer", "a", "ans"]
+    "answer": ["answer", "a", "ans"],
+    "affine": ["affine"]
 }
 CMDS = {
     "help": HelpCommand,
-    "quote": RandQuote,
     "caesar": CaesarCipher,
-    "answer": AnswerCommand
+    "answer": AnswerCommand,
+    "affine": AffineCipher
 }
 
 activeCiphers = {}
