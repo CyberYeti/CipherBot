@@ -22,11 +22,13 @@ def GetQuote(min, max):
 
 quotes = {
     'caesar': [],
-    'affine': []
+    'affine': [],
+    'aristocrat': []
 }
 quoteParams = {
     'caesar': (100,125),
-    'affine': (50,100)
+    'affine': (50,100),
+    'aristocrat': (80,110)
 }
 
 minQuotes = 25
@@ -49,11 +51,46 @@ def NextQuote(cipher):
 #endregion
 
 #region Cipher Methods
-ALPHABET = 'abcdefghijklmnopqrstuvwxyz'
+ALPHABET = [*'abcdefghijklmnopqrstuvwxyz']
 
 def AlphabetOnly(text):
     res = [char for char in text.lower() if char in ALPHABET]
     return ''.join(res)
+
+def EncryptAristocrat(text):
+    def CreateAristoKey():
+        key = {}
+        scrambled = ALPHABET.copy()
+        random.shuffle(scrambled)
+
+        sameKeys = []
+        for letter in zip(ALPHABET, scrambled):
+            if letter[0] == letter[1]:
+                sameKeys.append(letter[0])
+            else:
+                key[letter[0]] = letter[1]
+        
+        if len(sameKeys) == 1:
+            alphIndex = ALPHABET.index(sameKeys[0])
+            if sameKeys[0] != key[ALPHABET[alphIndex-1]]:
+                key[sameKeys[0]] = key[ALPHABET[alphIndex-1]]
+                key[ALPHABET[alphIndex-1]] = sameKeys[0]
+            else:
+                key[sameKeys[0]] = key[ALPHABET[alphIndex-2]]
+                key[ALPHABET[alphIndex-2]] = sameKeys[0]
+        elif len(sameKeys) > 1:
+            for i,val in enumerate(sameKeys):
+                key[val] = sameKeys[i-1]
+        return key
+    
+    key = CreateAristoKey()
+    encrypted = ""
+    for char in text.lower():
+        if char in key:
+            encrypted += key[char]
+        else:
+            encrypted += char
+    return (encrypted, key)
 
 def EncryptCaesar(text):
     shift = random.randint(1,25)
@@ -117,6 +154,23 @@ async def AnswerCommand(message, args):
             return
     else:
         await message.channel.send(f"You don't have an active cipher")
+
+async def AristocratCipher(message, args):
+    quote = NextQuote('aristocrat')
+    plaintext = quote['q']
+    encrypted,key = EncryptAristocrat(plaintext)
+    author = quote['a']
+
+    if str(message.author) in activeCiphers:
+        await EditCipherEmbed(message, 'f')
+
+    embedMsg = discord.Embed(title=f"{str(message.author)}'s Cipher", color=ACTIVE_COLOR)
+    embedMsg.set_footer(text="Active Cipher")
+    embedMsg.description = f"**Decrypt this quote by {author} encrypted using the aristocrat cipher.**\n{encrypted}"
+
+    activeCiphers[str(message.author)] = {'ans': plaintext}
+    msg = await message.channel.send(embed=embedMsg)
+    activeCiphers[str(message.author)]['msg'] = msg
 
 async def CaesarCipher(message, args):
     quote = NextQuote('caesar')
@@ -187,13 +241,15 @@ CMD_NAMES = {
     "help": ["help", "h"],
     "caesar": ["caesar", "c"],
     "answer": ["answer", "a", "ans"],
-    "affine": ["affine"]
+    "affine": ["affine"],
+    "aristocrat": ["aristocrat", "aristo"]
 }
 CMDS = {
     "help": HelpCommand,
     "caesar": CaesarCipher,
     "answer": AnswerCommand,
-    "affine": AffineCipher
+    "affine": AffineCipher,
+    "aristocrat": AristocratCipher
 }
 
 activeCiphers = {}
