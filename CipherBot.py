@@ -92,6 +92,16 @@ def EncryptAristocrat(text):
             encrypted += char
     return (encrypted, key)
 
+def EncryptParistocrat(text):
+    aristo,key = EncryptAristocrat(text)
+    encrypted = ""
+    for i,char in enumerate(AlphabetOnly(aristo)):
+        if (i+1)%5 == 1:
+            encrypted += " "
+        encrypted += char
+    encrypted = encrypted[1:]
+    return (encrypted, key)
+
 def EncryptCaesar(text):
     shift = random.randint(1,25)
     encrypted = ""
