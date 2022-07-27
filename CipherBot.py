@@ -23,12 +23,14 @@ def GetQuote(min, max):
 quotes = {
     'caesar': [],
     'affine': [],
-    'aristocrat': []
+    'aristocrat': [],
+    'patristocrat': []
 }
 quoteParams = {
     'caesar': (100,125),
     'affine': (50,100),
-    'aristocrat': (80,110)
+    'aristocrat': (80,110),
+    'patristocrat': (80,110)
 }
 
 minQuotes = 25
@@ -92,7 +94,7 @@ def EncryptAristocrat(text):
             encrypted += char
     return (encrypted, key)
 
-def EncryptParistocrat(text):
+def EncryptPatristocrat(text):
     aristo,key = EncryptAristocrat(text)
     encrypted = ""
     for i,char in enumerate(AlphabetOnly(aristo)):
@@ -165,6 +167,24 @@ async def AnswerCommand(message, args):
     else:
         await message.channel.send(f"You don't have an active cipher")
 
+async def PatristocratCipher(message, args):
+    quote = NextQuote('patristocrat')
+    print(quote)
+    plaintext = quote['q']
+    encrypted,key = EncryptPatristocrat(plaintext)
+    author = quote['a']
+
+    if str(message.author) in activeCiphers:
+        await EditCipherEmbed(message, 'f')
+
+    embedMsg = discord.Embed(title=f"{str(message.author)}'s Cipher", color=ACTIVE_COLOR)
+    embedMsg.set_footer(text="Active Cipher")
+    embedMsg.description = f"**Decrypt this quote by {author} encrypted using the patristocrat cipher.**\n{encrypted}"
+
+    activeCiphers[str(message.author)] = {'ans': plaintext}
+    msg = await message.channel.send(embed=embedMsg)
+    activeCiphers[str(message.author)]['msg'] = msg
+
 async def AristocratCipher(message, args):
     quote = NextQuote('aristocrat')
     plaintext = quote['q']
@@ -236,6 +256,9 @@ async def AffineCipher(message, args):
     activeCiphers[str(message.author)]['msg'] = msg
 
 async def HelpCommand(message, args):
+    embedMsg = discord.Embed(title=f"Available Commands", color=ACTIVE_COLOR)
+    embedMsg.set_footer(text="Active Cipher")
+
     text = "The available commands are:"
     for key in CMDS:
         text += f"\nc.{key}"
@@ -247,19 +270,29 @@ async def HelpCommand(message, args):
 client = discord.Client()
 
 CMD_HEADER = "c."
+
+CMD_GROUPING = {
+    "General": ["help", "answer"],
+    "Text Ciphers": ["aristocrat", "patristocrat"],
+    "Math Ciphers": ["caesar", "affine"],
+    "Wierd Ciphers": []
+}
+
 CMD_NAMES = {
     "help": ["help", "h"],
-    "caesar": ["caesar", "c"],
+    "caesar": ["caesar"],
     "answer": ["answer", "a", "ans"],
     "affine": ["affine"],
-    "aristocrat": ["aristocrat", "aristo"]
+    "aristocrat": ["aristocrat", "aristo"],
+    "patristocrat": ["patristocrat", "patristo"]
 }
 CMDS = {
     "help": HelpCommand,
     "caesar": CaesarCipher,
     "answer": AnswerCommand,
     "affine": AffineCipher,
-    "aristocrat": AristocratCipher
+    "aristocrat": AristocratCipher,
+    "patristocrat": PatristocratCipher
 }
 
 activeCiphers = {}
