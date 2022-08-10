@@ -169,7 +169,6 @@ async def AnswerCommand(message, args):
 
 async def PatristocratCipher(message, args):
     quote = NextQuote('patristocrat')
-    print(quote)
     plaintext = quote['q']
     encrypted,key = EncryptPatristocrat(plaintext)
     author = quote['a']
@@ -256,13 +255,41 @@ async def AffineCipher(message, args):
     activeCiphers[str(message.author)]['msg'] = msg
 
 async def HelpCommand(message, args):
-    embedMsg = discord.Embed(title=f"Available Commands", color=ACTIVE_COLOR)
-    embedMsg.set_footer(text="Active Cipher")
+    def GeneralCMD():
+        embedMsg = discord.Embed(title=f"Available Commands", color=ACTIVE_COLOR)
+        embedMsg.set_footer(text="Type c.help [command] for more info")
 
-    text = "The available commands are:"
-    for key in CMDS:
-        text += f"\nc.{key}"
-    await message.channel.send(text)
+        description = ""
+        for gName,group in CMD_GROUPING.items():
+            description += f"\n\n**{gName}**"
+            for key in group:
+                description += f"\n{key}"
+
+        embedMsg.description = description
+        return embedMsg
+    def SpecificCMD():
+        if args not in CMD_INFO:
+            embedMsg = discord.Embed(title=f"Unknown Command", color=GIVEUP_COLOR)
+            embedMsg.description = f"Sorry, the command '{args}' was not recognised"
+            return embedMsg
+
+        embedMsg = discord.Embed(title=f"{args} Commands", color=ACTIVE_COLOR)
+
+        description = f"**Info:**\n{CMD_INFO[args]}\n\n**Alternative Names:**"
+        for name in CMD_NAMES[args]:
+            description += f"\n{name}"
+
+        embedMsg.description = description
+        return embedMsg
+
+    embedMsg = discord.Embed(title=f"Blank", color=ACTIVE_COLOR)
+    if args == "":
+        embedMsg = GeneralCMD()
+    else:
+        embedMsg = SpecificCMD()
+
+    await message.channel.send(embed=embedMsg)
+
 
 #endregion
 
@@ -286,6 +313,7 @@ CMD_NAMES = {
     "aristocrat": ["aristocrat", "aristo"],
     "patristocrat": ["patristocrat", "patristo"]
 }
+
 CMDS = {
     "help": HelpCommand,
     "caesar": CaesarCipher,
@@ -293,6 +321,15 @@ CMDS = {
     "affine": AffineCipher,
     "aristocrat": AristocratCipher,
     "patristocrat": PatristocratCipher
+}
+
+CMD_INFO ={
+    "help": "Gives a list of commands and more information on specific commands.\nCommand List: c.help\nSpecific Info: c.help [command]",
+    "caesar": "Generates a Caesar cipher problem for you to solve.",
+    "answer": "A command used to submit an answer and check if you answered it correctly.\nSubmit Answer: c.answer [answer]",
+    "affine": "Generates an Affine cipher problem for you to solve.",
+    "aristocrat": "Generates an Aristocrat cipher problem for you to solve.",
+    "patristocrat": "Generates a Patristocrat cipher problem for you to solve."
 }
 
 activeCiphers = {}
