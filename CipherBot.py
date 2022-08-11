@@ -24,13 +24,15 @@ quotes = {
     'caesar': [],
     'affine': [],
     'aristocrat': [],
-    'patristocrat': []
+    'patristocrat': [],
+    'morse': []
 }
 quoteParams = {
     'caesar': (100,125),
     'affine': (50,100),
     'aristocrat': (80,110),
-    'patristocrat': (80,110)
+    'patristocrat': (80,110),
+    'morse': (20,40)
 }
 
 minQuotes = 25
@@ -130,6 +132,49 @@ def EncryptAffine(text):
             encrypted += char
 
     return (encrypted, multiplier, shift)
+
+morseKey = {
+    'a':".-",
+    'b':"-...",
+    'c':"-.-.",
+    'd':"-..",
+    'e':".",
+    'f':"..-.",
+    'g':"--.",
+    'h':"....",
+    'i':"..",
+    'j':".---",
+    'k':"-.-",
+    'l':".-..",
+    'm':"--",
+    'n':"-.",
+    'o':"---",
+    'p':".--.",
+    'q':"--.-",
+    'r':".-.",
+    's':"...",
+    't':"-",
+    'u':"..-",
+    'v':"...-",
+    'w':".--",
+    'x':"-..-",
+    'y':"-.--",
+    'z':"--.. ",
+}
+def EncryptMorse(text):
+    encrypted = ""
+    letter = True
+    for char in text.lower(): 
+        if char in morseKey:
+            encrypted += f"{morseKey[char]}x"
+            letter = True
+        else:
+            if letter:
+                encrypted += "x"
+            letter = False
+    while encrypted[-1] == 'x':
+        encrypted = encrypted[:-1]
+    return encrypted
 #endregion
 
 async def EditCipherEmbed(message, outcome):
@@ -254,6 +299,23 @@ async def AffineCipher(message, args):
     msg = await message.channel.send(embed=embedMsg)
     activeCiphers[str(message.author)]['msg'] = msg
 
+async def MorseCipher(message, args):
+    quote = NextQuote('morse')
+    plaintext = quote['q']
+    encrypted = EncryptMorse(plaintext)
+    author = quote['a']
+
+    if str(message.author) in activeCiphers:
+        await EditCipherEmbed(message, 'f')
+
+    embedMsg = discord.Embed(title=f"{str(message.author)}'s Cipher", color=ACTIVE_COLOR)
+    embedMsg.set_footer(text="Active Cipher")
+    embedMsg.description = f"**Decrypt this quote by {author} encrypted using morse code.**\n{encrypted}"
+
+    activeCiphers[str(message.author)] = {'ans': plaintext}
+    msg = await message.channel.send(embed=embedMsg)
+    activeCiphers[str(message.author)]['msg'] = msg
+
 async def HelpCommand(message, args):
     def GeneralCMD():
         embedMsg = discord.Embed(title=f"Available Commands", color=ACTIVE_COLOR)
@@ -302,7 +364,7 @@ CMD_GROUPING = {
     "General": ["help", "answer"],
     "Text Ciphers": ["aristocrat", "patristocrat"],
     "Math Ciphers": ["caesar", "affine"],
-    "Wierd Ciphers": []
+    "Wierd Ciphers": ["morse"]
 }
 
 CMD_NAMES = {
@@ -311,7 +373,8 @@ CMD_NAMES = {
     "answer": ["answer", "a", "ans"],
     "affine": ["affine"],
     "aristocrat": ["aristocrat", "aristo"],
-    "patristocrat": ["patristocrat", "patristo"]
+    "patristocrat": ["patristocrat", "patristo"],
+    "morse": ["morse"]
 }
 
 CMDS = {
@@ -320,7 +383,8 @@ CMDS = {
     "answer": AnswerCommand,
     "affine": AffineCipher,
     "aristocrat": AristocratCipher,
-    "patristocrat": PatristocratCipher
+    "patristocrat": PatristocratCipher,
+    "morse": MorseCipher
 }
 
 CMD_INFO ={
@@ -329,7 +393,8 @@ CMD_INFO ={
     "answer": "A command used to submit an answer and check if you answered it correctly.\nSubmit Answer: c.answer [answer]",
     "affine": "Generates an Affine cipher problem for you to solve.",
     "aristocrat": "Generates an Aristocrat cipher problem for you to solve.",
-    "patristocrat": "Generates a Patristocrat cipher problem for you to solve."
+    "patristocrat": "Generates a Patristocrat cipher problem for you to solve.",
+    "morse": "Generates a Morse code problem for you to solve."
 }
 
 activeCiphers = {}
