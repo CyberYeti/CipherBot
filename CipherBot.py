@@ -30,8 +30,8 @@ quotes = {
 quoteParams = {
     'caesar': (100,125),
     'affine': (50,100),
-    'aristocrat': (80,110),
-    'patristocrat': (80,110),
+    'aristocrat': (80,130),
+    'patristocrat': (80,150),
     'morse': (20,40)
 }
 
@@ -180,6 +180,7 @@ def EncryptMorse(text):
 async def EditCipherEmbed(message, outcome):
     prevMessage = activeCiphers[str(message.author)]['msg']
     prevEmbed = prevMessage.embeds[0]
+    prevEmbed.description += f"\n\n**The answer was:**\n{activeCiphers[str(message.author)]['ans']}"
     if outcome == 'f':
         prevEmbed.set_footer(text="Given Up Cipher")
         prevEmbed.color = GIVEUP_COLOR
