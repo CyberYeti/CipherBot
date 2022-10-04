@@ -25,17 +25,19 @@ quotes = {
     'affine': [],
     'aristocrat': [],
     'patristocrat': [],
-    'morse': []
+    'morse': [],
+    'railfence': []
 }
 quoteParams = {
     'caesar': (100,125),
     'affine': (50,100),
     'aristocrat': (80,130),
     'patristocrat': (80,150),
-    'morse': (20,40)
+    'morse': (20,50),
+    'railfence': (20,50)
 }
 
-minQuotes = 25
+minQuotes = 10
 def RefillQuotes():
     while True:
         for quoteList,params in zip(quotes.values(), quoteParams.values()):
@@ -55,7 +57,17 @@ def NextQuote(cipher):
 #endregion
 
 #region Cipher Methods
+
 ALPHABET = [*'abcdefghijklmnopqrstuvwxyz']
+
+def RemoveNonLetters(text):
+    output=""
+    for char in text:
+        for letter in ALPHABET:
+            if char.lower() == letter:
+                output += char
+                break
+    return output
 
 def AlphabetOnly(text):
     res = [char for char in text.lower() if char in ALPHABET]
@@ -175,6 +187,37 @@ def EncryptMorse(text):
     while encrypted[-1] == 'x':
         encrypted = encrypted[:-1]
     return encrypted
+
+def EncryptRailfence(text, numRailsRange=(2, 5)):
+    plainTextLetters = RemoveNonLetters(text).lower()
+    numRails = random.randint(numRailsRange[0], numRailsRange[1])
+    offset = random.randint(0,numRails*2-3)
+    rails=[]
+    for i in range(numRails):
+        rails.append("")
+    counter = offset
+    increment = 1
+    if counter > numRails-1:
+        increment = -1
+        counter = numRails*2-2-counter
+    elif counter == numRails-1:
+        increment = -1
+
+    for char in plainTextLetters:
+        rails[counter] += char
+        counter += increment
+        if counter == 0 or counter == numRails-1:
+            increment *= -1
+
+    encrypted = ""
+    for rail in rails:
+        encrypted += rail
+    # retData = {
+    #     "Encrypted":encrypted,
+    #     "PlainText": text,
+    #     "Info":{"Cipher":"RailFence", "Rails":numRails, "Offset":offset}
+    # }
+    return (encrypted, numRails, offset)
 #endregion
 
 async def EditCipherEmbed(message, outcome):
@@ -317,6 +360,40 @@ async def MorseCipher(message, args):
     msg = await message.channel.send(embed=embedMsg)
     activeCiphers[str(message.author)]['msg'] = msg
 
+async def RailFenceCipher(message, args):
+    quote = NextQuote('railfence')
+    plaintext = quote['q']
+    encrypted = EncryptMorse(plaintext)
+    author = quote['a']
+
+    plainTextLetters = RemoveNonLetters(plaintext).lower()
+    # data = EncryptRailfence(plaintext)
+    encrypted,rails,offset = EncryptRailfence(plaintext)
+
+    # Create Discord Message
+    if str(message.author) in activeCiphers:
+        await EditCipherEmbed(message, 'f')
+
+    embedMsg = discord.Embed(title=f"{str(message.author)}'s Cipher", color=ACTIVE_COLOR)
+    embedMsg.set_footer(text="Active Cipher")
+
+    num = random.randint(1,2)
+    if num == 1: # decode with known rails
+        embedMsg.description = f"**Decode this quote by {author} that was encoded using the Railfence cipher with {rails} rails. There may be an offset.**\n"
+    elif num == 2: # decode with unknown rails
+        wordSeg = ""
+        rint = random.randint(0, len(plainTextLetters)-1)
+        if rint+5 > len(plainTextLetters)-1:
+            wordSeg = plainTextLetters[rint-5:rint]
+        else:
+            wordSeg = plainTextLetters[rint:rint+5]
+        embedMsg.description = f"**Decode this quote by {author} that was encoded using the Railfence cipher with between 2 and 5 rails inclusive. The plaintext contains the string {wordSeg}. There may be an offset.**\n"
+    embedMsg.description += encrypted
+
+    activeCiphers[str(message.author)] = {'ans': plaintext}
+    msg = await message.channel.send(embed=embedMsg)
+    activeCiphers[str(message.author)]['msg'] = msg
+
 async def HelpCommand(message, args):
     def GeneralCMD():
         embedMsg = discord.Embed(title=f"Available Commands", color=ACTIVE_COLOR)
@@ -361,13 +438,15 @@ client = discord.Client()
 
 CMD_HEADER = "c."
 
+# Grouping to make the Help Command More Organized
 CMD_GROUPING = {
     "General": ["help", "answer"],
     "Text Ciphers": ["aristocrat", "patristocrat"],
     "Math Ciphers": ["caesar", "affine"],
-    "Wierd Ciphers": ["morse"]
+    "Wierd Ciphers": ["morse", "railfence"]
 }
 
+# Any avalible command names for a specific command
 CMD_NAMES = {
     "help": ["help", "h"],
     "caesar": ["caesar"],
@@ -375,9 +454,11 @@ CMD_NAMES = {
     "affine": ["affine"],
     "aristocrat": ["aristocrat", "aristo"],
     "patristocrat": ["patristocrat", "patristo"],
-    "morse": ["morse"]
+    "morse": ["morse"],
+    "railfence": ["railfence", "rail"]
 }
 
+# Connect command to function
 CMDS = {
     "help": HelpCommand,
     "caesar": CaesarCipher,
@@ -385,7 +466,8 @@ CMDS = {
     "affine": AffineCipher,
     "aristocrat": AristocratCipher,
     "patristocrat": PatristocratCipher,
-    "morse": MorseCipher
+    "morse": MorseCipher,
+    "railfence": RailFenceCipher
 }
 
 CMD_INFO ={
@@ -395,7 +477,8 @@ CMD_INFO ={
     "affine": "Generates an Affine cipher problem for you to solve.",
     "aristocrat": "Generates an Aristocrat cipher problem for you to solve.",
     "patristocrat": "Generates a Patristocrat cipher problem for you to solve.",
-    "morse": "Generates a Morse code problem for you to solve."
+    "morse": "Generates a Morse code problem for you to solve.",
+    "railfence": "Generates a RailFence cipher problem for you to solve."
 }
 
 activeCiphers = {}
