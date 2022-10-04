@@ -413,7 +413,7 @@ async def HelpCommand(message, args):
             embedMsg.description = f"Sorry, the command '{args}' was not recognised"
             return embedMsg
 
-        embedMsg = discord.Embed(title=f"{args} Commands", color=ACTIVE_COLOR)
+        embedMsg = discord.Embed(title=f"{args} Command", color=ACTIVE_COLOR)
 
         description = f"**Info:**\n{CMD_INFO[args]}\n\n**Alternative Names:**"
         for name in CMD_NAMES[args]:
@@ -458,7 +458,7 @@ CMD_NAMES = {
     "railfence": ["railfence", "rail"]
 }
 
-# Connect command to function
+# Connect command to function 
 CMDS = {
     "help": HelpCommand,
     "caesar": CaesarCipher,
