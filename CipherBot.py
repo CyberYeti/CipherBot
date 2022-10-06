@@ -447,7 +447,7 @@ async def MorbitCipher(message, args):
     random.shuffle(nums)
     numHints = random.randint(4,5)
     for i in range(numHints):
-        embedMsg.description += f"{nums[i]}={key[nums[i]]}, "
+        embedMsg.description += f"{nums[i]} = {key[nums[i]]}, "
     embedMsg.description = embedMsg.description.removesuffix(", ")
     embedMsg.description += "**\n"
 
