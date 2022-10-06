@@ -26,7 +26,8 @@ quotes = {
     'aristocrat': [],
     'patristocrat': [],
     'morse': [],
-    'railfence': []
+    'railfence': [],
+    'morbit': []
 }
 quoteParams = {
     'caesar': (100,125),
@@ -34,7 +35,8 @@ quoteParams = {
     'aristocrat': (80,130),
     'patristocrat': (80,150),
     'morse': (20,50),
-    'railfence': (20,50)
+    'railfence': (20,50),
+    'morbit': (20,50)
 }
 
 minQuotes = 10
@@ -212,12 +214,50 @@ def EncryptRailfence(text, numRailsRange=(2, 5)):
     encrypted = ""
     for rail in rails:
         encrypted += rail
-    # retData = {
-    #     "Encrypted":encrypted,
-    #     "PlainText": text,
-    #     "Info":{"Cipher":"RailFence", "Rails":numRails, "Offset":offset}
-    # }
     return (encrypted, numRails, offset)
+
+
+morbitPairs = [
+    "..",
+    ".-",
+    ".x",
+    "-.",
+    "--",
+    "-x",
+    "x.",
+    "x-",
+    "xx"
+]
+
+def EncryptMorbit(text):
+    morse = EncryptMorse(text)
+    if len(morse)%2 == 1:
+        morse+="x"
+
+    nums = [*"123456789"]
+    random.shuffle(nums)
+
+    encrypted = ""
+    for i in range(0,len(morse),2):
+        pair = morse[i]
+        pair += morse[i+1]
+        encrypted+=nums[morbitPairs.index(pair)]
+        encrypted+=" "
+    encrypted = encrypted.removesuffix(" ")
+    
+    key = {
+        "1":morbitPairs[nums.index("1")],
+        "2":morbitPairs[nums.index("2")],
+        "3":morbitPairs[nums.index("3")],
+        "4":morbitPairs[nums.index("4")],
+        "5":morbitPairs[nums.index("5")],
+        "6":morbitPairs[nums.index("6")],
+        "7":morbitPairs[nums.index("7")],
+        "8":morbitPairs[nums.index("8")],
+        "9":morbitPairs[nums.index("9")],
+    }
+
+    return (encrypted, key)
 #endregion
 
 async def EditCipherEmbed(message, outcome):
@@ -225,7 +265,7 @@ async def EditCipherEmbed(message, outcome):
     prevEmbed = prevMessage.embeds[0]
     prevEmbed.description += f"\n\n**The answer was:**\n{activeCiphers[str(message.author)]['ans']}"
     if outcome == 'f':
-        prevEmbed.set_footer(text="Given Up Cipher")
+        prevEmbed.set_footer(text="Failed Cipher")
         prevEmbed.color = GIVEUP_COLOR
     elif outcome == 's':
         prevEmbed.set_footer(text="Solved Cipher")
@@ -363,7 +403,6 @@ async def MorseCipher(message, args):
 async def RailFenceCipher(message, args):
     quote = NextQuote('railfence')
     plaintext = quote['q']
-    encrypted = EncryptMorse(plaintext)
     author = quote['a']
 
     plainTextLetters = RemoveNonLetters(plaintext).lower()
@@ -393,6 +432,31 @@ async def RailFenceCipher(message, args):
     activeCiphers[str(message.author)] = {'ans': plaintext}
     msg = await message.channel.send(embed=embedMsg)
     activeCiphers[str(message.author)]['msg'] = msg
+
+async def MorbitCipher(message, args):
+    quote = NextQuote('morbit')
+    plaintext = quote['q']
+    author = quote['a']
+    encrypted,key = EncryptMorbit(plaintext)
+
+    embedMsg = discord.Embed(title=f"{str(message.author)}'s Cipher", color=ACTIVE_COLOR)
+    embedMsg.set_footer(text="Active Cipher")
+    embedMsg.description = f"**Decode this quote by {author} that was encoded using the Morbit cipher. You are told "
+
+    nums = [*"123456789"]
+    random.shuffle(nums)
+    numHints = random.randint(4,5)
+    for i in range(numHints):
+        embedMsg.description += f"{nums[i]}={key[nums[i]]}, "
+    embedMsg.description = embedMsg.description.removesuffix(", ")
+    embedMsg.description += "**\n"
+
+    embedMsg.description += encrypted
+
+    activeCiphers[str(message.author)] = {'ans': plaintext}
+    msg = await message.channel.send(embed=embedMsg)
+    activeCiphers[str(message.author)]['msg'] = msg
+
 
 async def HelpCommand(message, args):
     def GeneralCMD():
@@ -443,7 +507,7 @@ CMD_GROUPING = {
     "General": ["help", "answer"],
     "Text Ciphers": ["aristocrat", "patristocrat"],
     "Math Ciphers": ["caesar", "affine"],
-    "Wierd Ciphers": ["morse", "railfence"]
+    "Wierd Ciphers": ["morse", "railfence", "morbit"]
 }
 
 # Any avalible command names for a specific command
@@ -455,7 +519,8 @@ CMD_NAMES = {
     "aristocrat": ["aristocrat", "aristo"],
     "patristocrat": ["patristocrat", "patristo"],
     "morse": ["morse"],
-    "railfence": ["railfence", "rail"]
+    "railfence": ["railfence", "rail"],
+    "morbit": ["morbit"]
 }
 
 # Connect command to function 
@@ -467,7 +532,8 @@ CMDS = {
     "aristocrat": AristocratCipher,
     "patristocrat": PatristocratCipher,
     "morse": MorseCipher,
-    "railfence": RailFenceCipher
+    "railfence": RailFenceCipher,
+    "morbit": MorbitCipher
 }
 
 CMD_INFO ={
@@ -478,7 +544,8 @@ CMD_INFO ={
     "aristocrat": "Generates an Aristocrat cipher problem for you to solve.",
     "patristocrat": "Generates a Patristocrat cipher problem for you to solve.",
     "morse": "Generates a Morse code problem for you to solve.",
-    "railfence": "Generates a RailFence cipher problem for you to solve."
+    "railfence": "Generates a RailFence cipher problem for you to solve.",
+    "morbit": "Generates a Morbit cipher problem for you to solve."
 }
 
 activeCiphers = {}
