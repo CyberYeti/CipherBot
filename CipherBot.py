@@ -369,7 +369,7 @@ async def AffineCipher(message, args):
         embedMsg.description = f"**Decrypt this quote by {author} encrypted using the affine cipher with the key ({multiplier},{shift}).**\n{encrypted}"
         activeCiphers[str(message.author)] = {'ans': plaintext}
     elif problemType == 1: #decrypt problem
-        embedMsg.description = f"**Encrypt this quote by {author} using the caesar affine using the key ({multiplier},{shift}).**\n{plaintext}"
+        embedMsg.description = f"**Encrypt this quote by {author} using the affine using the key ({multiplier},{shift}).**\n{plaintext}"
         activeCiphers[str(message.author)] = {'ans': encrypted}
     elif problemType == 2: #decrypt using given cipher plain pairs
         lettersInPlain = []
@@ -378,7 +378,7 @@ async def AffineCipher(message, args):
                 lettersInPlain.append(letter)
         selectedLetters = random.sample(lettersInPlain, 2)
 
-        embedMsg.description = f"**Decrypt this quote by {author} encrypted using the affine cipher. Ciphertext \'{ALPHABET[((ALPHABET.index(selectedLetters[0])*multiplier)+shift) % 26]}\' decodes to \'{selectedLetters[0]}\' and ciphertext \'{ALPHABET[((ALPHABET.index(selectedLetters[0])*multiplier)+shift) % 26]}\' decodes to \'{selectedLetters[1]}\'.**\n{encrypted}"
+        embedMsg.description = f"**Decrypt this quote by {author} encrypted using the affine cipher. Ciphertext \'{ALPHABET[((ALPHABET.index(selectedLetters[0])*multiplier)+shift) % 26]}\' decodes to \'{selectedLetters[0]}\' and ciphertext \'{ALPHABET[((ALPHABET.index(selectedLetters[1])*multiplier)+shift) % 26]}\' decodes to \'{selectedLetters[1]}\'.**\n{encrypted}"
         activeCiphers[str(message.author)] = {'ans': plaintext}
     msg = await message.channel.send(embed=embedMsg)
     activeCiphers[str(message.author)]['msg'] = msg
