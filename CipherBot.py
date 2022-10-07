@@ -285,12 +285,22 @@ async def AnswerCommand(message, args):
             return
 
         info = activeCiphers[str(message.author)]
-        if AlphabetOnly(inputtedAns) == AlphabetOnly(info['ans']):
-            await message.channel.send(f"You got it correct!")
+        if AlphabetOnly(inputtedAns) == AlphabetOnly(info['ans']): #Correct Answer
+            cipherType = info['cipher']
+            secondsTaken = time.time() - info['time']
+            if secondsTaken > (60*60):
+                await message.channel.send(f"You got it correct!\nIt took you over an hour to solve this {cipherType} cipher.")
+            else:
+                secTaken = round((secondsTaken % 60) * 100) / 100
+                minTaken = int((secondsTaken - secondsTaken % 60)/60)
+
+                timeTaken = f"{minTaken} min {secTaken} sec" if minTaken != 0 else f"{secTaken} sec"
+
+                await message.channel.send(f"You got it correct!\nIt took you {timeTaken} to solve this {cipherType} cipher.")
             await EditCipherEmbed(message, 's')
             del activeCiphers[str(message.author)]
             return
-        else:
+        else: # Wrong Answer
             await message.channel.send(f"You got it wrong")
             return
     else:
@@ -312,6 +322,8 @@ async def PatristocratCipher(message, args):
     activeCiphers[str(message.author)] = {'ans': plaintext}
     msg = await message.channel.send(embed=embedMsg)
     activeCiphers[str(message.author)]['msg'] = msg
+    activeCiphers[str(message.author)]['cipher'] = "Patristocrat Cipher"
+    activeCiphers[str(message.author)]['time'] = time.time()
 
 async def AristocratCipher(message, args):
     quote = NextQuote('aristocrat')
@@ -329,6 +341,8 @@ async def AristocratCipher(message, args):
     activeCiphers[str(message.author)] = {'ans': plaintext}
     msg = await message.channel.send(embed=embedMsg)
     activeCiphers[str(message.author)]['msg'] = msg
+    activeCiphers[str(message.author)]['cipher'] = "Aristocrat"
+    activeCiphers[str(message.author)]['time'] = time.time()
 
 async def CaesarCipher(message, args):
     quote = NextQuote('caesar')
@@ -351,6 +365,8 @@ async def CaesarCipher(message, args):
         activeCiphers[str(message.author)] = {'ans': encrypted}
     msg = await message.channel.send(embed=embedMsg)
     activeCiphers[str(message.author)]['msg'] = msg
+    activeCiphers[str(message.author)]['cipher'] = "Caesar"
+    activeCiphers[str(message.author)]['time'] = time.time()
 
 async def AffineCipher(message, args):
     quote = NextQuote('affine')
@@ -382,6 +398,8 @@ async def AffineCipher(message, args):
         activeCiphers[str(message.author)] = {'ans': plaintext}
     msg = await message.channel.send(embed=embedMsg)
     activeCiphers[str(message.author)]['msg'] = msg
+    activeCiphers[str(message.author)]['cipher'] = "Affine"
+    activeCiphers[str(message.author)]['time'] = time.time()
 
 async def MorseCipher(message, args):
     quote = NextQuote('morse')
@@ -399,6 +417,8 @@ async def MorseCipher(message, args):
     activeCiphers[str(message.author)] = {'ans': plaintext}
     msg = await message.channel.send(embed=embedMsg)
     activeCiphers[str(message.author)]['msg'] = msg
+    activeCiphers[str(message.author)]['cipher'] = "Morse"
+    activeCiphers[str(message.author)]['time'] = time.time()
 
 async def RailFenceCipher(message, args):
     quote = NextQuote('railfence')
@@ -432,6 +452,8 @@ async def RailFenceCipher(message, args):
     activeCiphers[str(message.author)] = {'ans': plaintext}
     msg = await message.channel.send(embed=embedMsg)
     activeCiphers[str(message.author)]['msg'] = msg
+    activeCiphers[str(message.author)]['cipher'] = "Railfence"
+    activeCiphers[str(message.author)]['time'] = time.time()
 
 async def MorbitCipher(message, args):
     quote = NextQuote('morbit')
@@ -456,6 +478,8 @@ async def MorbitCipher(message, args):
     activeCiphers[str(message.author)] = {'ans': plaintext}
     msg = await message.channel.send(embed=embedMsg)
     activeCiphers[str(message.author)]['msg'] = msg
+    activeCiphers[str(message.author)]['cipher'] = "Morbit"
+    activeCiphers[str(message.author)]['time'] = time.time()
 
 
 async def HelpCommand(message, args):
