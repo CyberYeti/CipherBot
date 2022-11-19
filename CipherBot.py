@@ -27,7 +27,8 @@ quotes = {
     'patristocrat': [],
     'morse': [],
     'railfence': [],
-    'morbit': []
+    'morbit': [],
+    'binary': []
 }
 quoteParams = {
     'caesar': (100,125),
@@ -36,7 +37,8 @@ quoteParams = {
     'patristocrat': (80,150),
     'morse': (20,50),
     'railfence': (20,50),
-    'morbit': (20,50)
+    'morbit': (20,50),
+    'binary': (20,50)
 }
 
 minQuotes = 10
@@ -258,6 +260,41 @@ def EncryptMorbit(text):
     }
 
     return (encrypted, key)
+
+def EncryptBinary(text):
+    key = {
+        "a": 'aaaaa',
+        "b": 'aaaab',
+        "c": 'aaaba',
+        "d": 'aaabb',
+        "e": 'aabaa',
+        "f": 'aabab',
+        "g": 'aabba',
+        "h": 'aabbb',
+        "i": 'abaaa',
+        "j": 'abaaa',
+        "k": 'abaab',
+        "l": 'ababa',
+        "m": 'ababb',
+        "n": 'abbaa',
+        "o": 'abbab',
+        "p": 'abbba',
+        "q": 'abbbb',
+        "r": 'baaaa',
+        "s": 'baaab',
+        "t": 'baabb',
+        "u": 'baabb',
+        "v": 'baabb',
+        "w": 'babaa',
+        "x": 'babab',
+        "y": 'babba',
+        "z": 'babbb'
+    }
+    encrypted = ""
+    for char in AlphabetOnly(text).lower():
+        encrypted += key[char]
+
+    return encrypted
 #endregion
 
 async def EditCipherEmbed(message, outcome):
@@ -481,6 +518,21 @@ async def MorbitCipher(message, args):
     activeCiphers[str(message.author)]['cipher'] = "Morbit"
     activeCiphers[str(message.author)]['time'] = time.time()
 
+async def BinaryCipher(message, args):
+    quote = NextQuote('binary')
+    plaintext = quote['q']
+    author = quote['a']
+    encrypted = EncryptBinary(plaintext)
+
+    embedMsg = discord.Embed(title=f"{str(message.author)}'s Cipher", color=ACTIVE_COLOR)
+    embedMsg.set_footer(text="Active Cipher")
+    embedMsg.description = f"**Decode this quote by {author} that was encoded using the Binary cipher.**\n{encrypted}"
+
+    activeCiphers[str(message.author)] = {'ans': plaintext}
+    msg = await message.channel.send(embed=embedMsg)
+    activeCiphers[str(message.author)]['msg'] = msg
+    activeCiphers[str(message.author)]['cipher'] = "Binary"
+    activeCiphers[str(message.author)]['time'] = time.time()
 
 async def HelpCommand(message, args):
     def GeneralCMD():
@@ -531,7 +583,7 @@ CMD_GROUPING = {
     "General": ["help", "answer"],
     "Text Ciphers": ["aristocrat", "patristocrat"],
     "Math Ciphers": ["caesar", "affine"],
-    "Wierd Ciphers": ["morse", "railfence", "morbit"]
+    "Wierd Ciphers": ["morse", "railfence", "morbit", "binary"]
 }
 
 # Any avalible command names for a specific command
@@ -544,7 +596,8 @@ CMD_NAMES = {
     "patristocrat": ["patristocrat", "patristo"],
     "morse": ["morse"],
     "railfence": ["railfence", "rail"],
-    "morbit": ["morbit"]
+    "morbit": ["morbit"],
+    "binary": ["binary", "bin"]
 }
 
 # Connect command to function 
@@ -557,7 +610,8 @@ CMDS = {
     "patristocrat": PatristocratCipher,
     "morse": MorseCipher,
     "railfence": RailFenceCipher,
-    "morbit": MorbitCipher
+    "morbit": MorbitCipher,
+    "binary": BinaryCipher
 }
 
 CMD_INFO ={
@@ -569,7 +623,8 @@ CMD_INFO ={
     "patristocrat": "Generates a Patristocrat cipher problem for you to solve.",
     "morse": "Generates a Morse code problem for you to solve.",
     "railfence": "Generates a RailFence cipher problem for you to solve.",
-    "morbit": "Generates a Morbit cipher problem for you to solve."
+    "morbit": "Generates a Morbit cipher problem for you to solve.",
+    "binary": "Generates a Binary cipher problem for you to solve. (Uses A and B)"
 }
 
 activeCiphers = {}
