@@ -1,5 +1,6 @@
 import json, time, requests, threading, random, string
 import discord
+import CipherMethods as cm
 
 #region Get Token
 f = __file__.split("\\")
@@ -60,243 +61,6 @@ def NextQuote(cipher):
         print("Invalid Cipher Name")
 #endregion
 
-#region Cipher Methods
-
-ALPHABET = [*'abcdefghijklmnopqrstuvwxyz']
-
-def RemoveNonLetters(text):
-    output=""
-    for char in text:
-        for letter in ALPHABET:
-            if char.lower() == letter:
-                output += char
-                break
-    return output
-
-def AlphabetOnly(text):
-    res = [char for char in text.lower() if char in ALPHABET]
-    return ''.join(res)
-
-def EncryptAristocrat(text):
-    def CreateAristoKey():
-        key = {}
-        scrambled = ALPHABET.copy()
-        random.shuffle(scrambled)
-
-        sameKeys = []
-        for letter in zip(ALPHABET, scrambled):
-            if letter[0] == letter[1]:
-                sameKeys.append(letter[0])
-            else:
-                key[letter[0]] = letter[1]
-        
-        if len(sameKeys) == 1:
-            alphIndex = ALPHABET.index(sameKeys[0])
-            if sameKeys[0] != key[ALPHABET[alphIndex-1]]:
-                key[sameKeys[0]] = key[ALPHABET[alphIndex-1]]
-                key[ALPHABET[alphIndex-1]] = sameKeys[0]
-            else:
-                key[sameKeys[0]] = key[ALPHABET[alphIndex-2]]
-                key[ALPHABET[alphIndex-2]] = sameKeys[0]
-        elif len(sameKeys) > 1:
-            for i,val in enumerate(sameKeys):
-                key[val] = sameKeys[i-1]
-        return key
-    
-    key = CreateAristoKey()
-    encrypted = ""
-    for char in text.lower():
-        if char in key:
-            encrypted += key[char]
-        else:
-            encrypted += char
-    return (encrypted, key)
-
-def EncryptPatristocrat(text):
-    aristo,key = EncryptAristocrat(text)
-    encrypted = ""
-    for i,char in enumerate(AlphabetOnly(aristo)):
-        if (i+1)%5 == 1:
-            encrypted += " "
-        encrypted += char
-    encrypted = encrypted[1:]
-    return (encrypted, key)
-
-def EncryptCaesar(text):
-    shift = random.randint(1,25)
-    encrypted = ""
-    for char in text.lower():
-        if char in ALPHABET:
-            i = ALPHABET.index(char)
-            encrypted += ALPHABET[i+(shift-26)]
-        else:
-            encrypted += char
-    return (encrypted, shift)
-    
-affineMultipliers = [1,3,5,7,9,11,15,17,19,21,23,25]
-
-def EncryptAffine(text):
-    multiplier = random.choice(affineMultipliers)
-    shift = random.randint(0,25)
-
-    encrypted = ""
-    for char in text.lower():
-        if char in ALPHABET:
-            index = ALPHABET.index(char)
-            encrypted += ALPHABET[((index * multiplier) + shift)%26]
-        else:
-            encrypted += char
-
-    return (encrypted, multiplier, shift)
-
-morseKey = {
-    'a':".-",
-    'b':"-...",
-    'c':"-.-.",
-    'd':"-..",
-    'e':".",
-    'f':"..-.",
-    'g':"--.",
-    'h':"....",
-    'i':"..",
-    'j':".---",
-    'k':"-.-",
-    'l':".-..",
-    'm':"--",
-    'n':"-.",
-    'o':"---",
-    'p':".--.",
-    'q':"--.-",
-    'r':".-.",
-    's':"...",
-    't':"-",
-    'u':"..-",
-    'v':"...-",
-    'w':".--",
-    'x':"-..-",
-    'y':"-.--",
-    'z':"--.. ",
-}
-def EncryptMorse(text):
-    encrypted = ""
-    letter = True
-    for char in text.lower(): 
-        if char in morseKey:
-            encrypted += f"{morseKey[char]}x"
-            letter = True
-        else:
-            if letter:
-                encrypted += "x"
-            letter = False
-    while encrypted[-1] == 'x':
-        encrypted = encrypted[:-1]
-    return encrypted
-
-def EncryptRailfence(text, numRailsRange=(2, 5)):
-    plainTextLetters = RemoveNonLetters(text).lower()
-    numRails = random.randint(numRailsRange[0], numRailsRange[1])
-    offset = random.randint(0,numRails*2-3)
-    rails=[]
-    for i in range(numRails):
-        rails.append("")
-    counter = offset
-    increment = 1
-    if counter > numRails-1:
-        increment = -1
-        counter = numRails*2-2-counter
-    elif counter == numRails-1:
-        increment = -1
-
-    for char in plainTextLetters:
-        rails[counter] += char
-        counter += increment
-        if counter == 0 or counter == numRails-1:
-            increment *= -1
-
-    encrypted = ""
-    for rail in rails:
-        encrypted += rail
-    return (encrypted, numRails, offset)
-
-
-morbitPairs = [
-    "..",
-    ".-",
-    ".x",
-    "-.",
-    "--",
-    "-x",
-    "x.",
-    "x-",
-    "xx"
-]
-
-def EncryptMorbit(text):
-    morse = EncryptMorse(text)
-    if len(morse)%2 == 1:
-        morse+="x"
-
-    nums = [*"123456789"]
-    random.shuffle(nums)
-
-    encrypted = ""
-    for i in range(0,len(morse),2):
-        pair = morse[i]
-        pair += morse[i+1]
-        encrypted+=nums[morbitPairs.index(pair)]
-        encrypted+=" "
-    encrypted = encrypted.removesuffix(" ")
-    
-    key = {
-        "1":morbitPairs[nums.index("1")],
-        "2":morbitPairs[nums.index("2")],
-        "3":morbitPairs[nums.index("3")],
-        "4":morbitPairs[nums.index("4")],
-        "5":morbitPairs[nums.index("5")],
-        "6":morbitPairs[nums.index("6")],
-        "7":morbitPairs[nums.index("7")],
-        "8":morbitPairs[nums.index("8")],
-        "9":morbitPairs[nums.index("9")],
-    }
-
-    return (encrypted, key)
-
-def EncryptBinary(text):
-    key = {
-        "a": 'aaaaa',
-        "b": 'aaaab',
-        "c": 'aaaba',
-        "d": 'aaabb',
-        "e": 'aabaa',
-        "f": 'aabab',
-        "g": 'aabba',
-        "h": 'aabbb',
-        "i": 'abaaa',
-        "j": 'abaaa',
-        "k": 'abaab',
-        "l": 'ababa',
-        "m": 'ababb',
-        "n": 'abbaa',
-        "o": 'abbab',
-        "p": 'abbba',
-        "q": 'abbbb',
-        "r": 'baaaa',
-        "s": 'baaab',
-        "t": 'baabb',
-        "u": 'baabb',
-        "v": 'baabb',
-        "w": 'babaa',
-        "x": 'babab',
-        "y": 'babba',
-        "z": 'babbb'
-    }
-    encrypted = ""
-    for char in AlphabetOnly(text).lower():
-        encrypted += key[char]
-
-    return encrypted
-#endregion
-
 async def EditCipherEmbed(message, outcome):
     prevMessage = activeCiphers[str(message.author)]['msg']
     prevEmbed = prevMessage.embeds[0]
@@ -314,6 +78,8 @@ SOLVED_COLOR = 0x15f705
 ACTIVE_COLOR = 0x00bbff
 GIVEUP_COLOR = 0xf70b05
 
+ALPHABET = [*'abcdefghijklmnopqrstuvwxyz']
+
 async def AnswerCommand(message, args):
     if str(message.author) in activeCiphers:
         inputtedAns = args.translate(str.maketrans("", "", string.whitespace))
@@ -322,7 +88,7 @@ async def AnswerCommand(message, args):
             return
 
         info = activeCiphers[str(message.author)]
-        if AlphabetOnly(inputtedAns) == AlphabetOnly(info['ans']): #Correct Answer
+        if cm.AlphabetOnly(inputtedAns) == cm.AlphabetOnly(info['ans']): #Correct Answer
             cipherType = info['cipher']
             secondsTaken = time.time() - info['time']
             if secondsTaken > (60*60):
@@ -346,7 +112,7 @@ async def AnswerCommand(message, args):
 async def PatristocratCipher(message, args):
     quote = NextQuote('patristocrat')
     plaintext = quote['q']
-    encrypted,key = EncryptPatristocrat(plaintext)
+    encrypted,key = cm.EncryptPatristocrat(plaintext)
     author = quote['a']
 
     if str(message.author) in activeCiphers:
@@ -365,7 +131,7 @@ async def PatristocratCipher(message, args):
 async def AristocratCipher(message, args):
     quote = NextQuote('aristocrat')
     plaintext = quote['q']
-    encrypted,key = EncryptAristocrat(plaintext)
+    encrypted,key = cm.EncryptAristocrat(plaintext)
     author = quote['a']
 
     if str(message.author) in activeCiphers:
@@ -384,7 +150,7 @@ async def AristocratCipher(message, args):
 async def CaesarCipher(message, args):
     quote = NextQuote('caesar')
     plaintext = quote['q']
-    encrypted,shift = EncryptCaesar(plaintext)
+    encrypted,shift = cm.EncryptCaesar(plaintext)
     author = quote['a']
 
     if str(message.author) in activeCiphers:
@@ -408,7 +174,7 @@ async def CaesarCipher(message, args):
 async def AffineCipher(message, args):
     quote = NextQuote('affine')
     plaintext = quote['q']
-    encrypted,multiplier,shift = EncryptAffine(plaintext)
+    encrypted,multiplier,shift = cm.EncryptAffine(plaintext)
     author = quote['a']
 
     if str(message.author) in activeCiphers:
@@ -441,7 +207,7 @@ async def AffineCipher(message, args):
 async def MorseCipher(message, args):
     quote = NextQuote('morse')
     plaintext = quote['q']
-    encrypted = EncryptMorse(plaintext)
+    encrypted = cm.EncryptMorse(plaintext)
     author = quote['a']
 
     if str(message.author) in activeCiphers:
@@ -462,9 +228,9 @@ async def RailFenceCipher(message, args):
     plaintext = quote['q']
     author = quote['a']
 
-    plainTextLetters = RemoveNonLetters(plaintext).lower()
+    plainTextLetters = cm.AlphabetOnly(plaintext).lower()
     # data = EncryptRailfence(plaintext)
-    encrypted,rails,offset = EncryptRailfence(plaintext)
+    encrypted,rails,offset = cm.EncryptRailfence(plaintext)
 
     # Create Discord Message
     if str(message.author) in activeCiphers:
@@ -496,7 +262,7 @@ async def MorbitCipher(message, args):
     quote = NextQuote('morbit')
     plaintext = quote['q']
     author = quote['a']
-    encrypted,key = EncryptMorbit(plaintext)
+    encrypted,key = cm.EncryptMorbit(plaintext)
 
     embedMsg = discord.Embed(title=f"{str(message.author)}'s Cipher", color=ACTIVE_COLOR)
     embedMsg.set_footer(text="Active Cipher")
@@ -522,7 +288,7 @@ async def BinaryCipher(message, args):
     quote = NextQuote('binary')
     plaintext = quote['q']
     author = quote['a']
-    encrypted = EncryptBinary(plaintext)
+    encrypted = cm.EncryptBinary(plaintext)
 
     embedMsg = discord.Embed(title=f"{str(message.author)}'s Cipher", color=ACTIVE_COLOR)
     embedMsg.set_footer(text="Active Cipher")
@@ -569,7 +335,6 @@ async def HelpCommand(message, args):
         embedMsg = SpecificCMD()
 
     await message.channel.send(embed=embedMsg)
-
 
 #endregion
 
